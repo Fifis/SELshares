@@ -104,6 +104,21 @@ linearMuSmoothEmplikTest <- function(mu, theta, slope, Z, sel.weights, trim = NU
 }
 
 # Function for case 2: with shares
+# Modified function in the inner loop: takes mu and the hypothesised coefficients and returns the likelihood
+# It is called 'Wald' for comparability with OLS/GMM Wald test results for two coefficients
+# Here, theta = Q and coefs = c(beta0, beta1)
+linearMuSmoothEmplikWald <- function(mu, theta, coefs, Z, sel.weights, trim = NULL) {
+  beta <- c(coefs[1], coefs[2])
+  Q <- theta
+  if(is.null(trim)) trim <- rep(1, nrow(Z))
+  rho1 <- (Z$Y - cbind(1, Z$X) %*% beta) * Z$weight
+  rho2 <- ((1 - Z$D) - Q) * Z$weight
+  empliklist <- smoothEmplik2(rho1, sel.weights, shift = mu*rho2)
+  logsemplik <- trim %*% unlist(lapply(empliklist, '[[', 1))
+  return(logsemplik)
+}
+
+# Function for case 2: with shares
 linearSharesSmoothEmplik <- function(theta, Z, sel.weights, trim = NULL) {
   muopt <- optim(0, linearMuSmoothEmplik, theta=theta, Z=Z, sel.weights=sel.weights, method="Brent", lower=-10, upper=10)$value
   return(muopt)
@@ -112,6 +127,12 @@ linearSharesSmoothEmplik <- function(theta, Z, sel.weights, trim = NULL) {
 # Function for case 2: with shares
 linearSharesSmoothEmplikTest <- function(theta, slope, Z, sel.weights, trim = NULL) {
   muopt <- optim(0, linearMuSmoothEmplikTest, theta=theta, slope=slope, Z=Z, sel.weights=sel.weights, method="Brent", lower=-10, upper=10)$value
+  return(muopt)
+}
+
+# Function for case 2: with shares
+linearSharesSmoothEmplikWald <- function(theta, coefs, Z, sel.weights, trim = NULL) {
+  muopt <- optim(0, linearMuSmoothEmplikWald, theta=theta, coefs=coefs, Z=Z, sel.weights=sel.weights, method="Brent", lower=-10, upper=10)$value
   return(muopt)
 }
 
@@ -140,7 +161,10 @@ stratSampleLinearSEL <- function(N, # See generate.data for arguments of the sam
   Z <- generate.data(N=N, params=params, boundary=boundary, Pl=Pl, strat.var=strat.var, heteroskedastic=heteroskedastic, seed=seed)
   
   sel.weights.grid <- Z$X
-  if (!is.null(gridtransform)) sel.weights.grid <- gridtransform(sel.weights.grid)
+  if (!is.null(gridtransform)) {
+    ftransform <- get(gridtransform)
+    sel.weights.grid <- ftransform(sel.weights.grid)
+  }
   if (band < 0) {
     bn <- - band * 1.06*sd(sel.weights.grid)*length(sel.weights.grid)^{-1/5} # Bandwidth, Silverman's rule of thumb
   } else bn <- band
@@ -181,13 +205,17 @@ stratSampleLinearSEL <- function(N, # See generate.data for arguments of the sam
   results <- list(unrestricted = c(thetahat, SELur=SELur))
   if (powersize) {
     results$h0zero <- c(thetahat0[1], 0, SELr0=SELr0)
-    results$h1true <- c(thetahat1[1], 1, SELr1=SELr1)
+    results$h1true <- c(thetahat1[1], params[2], SELr1=SELr1)
   }
   if (wald) {
     SELwald <- as.numeric(linearSmoothEmplik(params[1:2], Z, sel.weights))
-    results$SELwald <- SELwald
+    results$h1wald <- c(params[1:2], SELwald=SELwald)
   }
-  results$minutes <- if (powersize) as.numeric(c(diff1, diff2, diff3)) else as.numeric(diff1)
+  results$minutes <- as.numeric(diff1)
+  if (powersize) results$minutes <- c(results$minutes, diff2, diff3)
+  
+  results$call <- c(N, params, boundary, Pl, strat.var, heteroskedastic, seed, band, bn, powersize, wald, verbose, optmethod)
+  names(results$call) <- c("N", "beta0", "beta1", "sdX", "sdU", "boundary", "P1", "P2", "strat.var", "heteroskedastic", "seed", "band", "bn", "powersize", "wald", "verbose", "optmethod")
   
   return(results)
 }
@@ -204,6 +232,7 @@ stratSampleLinearQSEL <- function(N, # See generate.data for arguments of the sa
                                   band = -1, # Multiple of Silverman's rot
                                   powersize = FALSE, # Whether SEL under the true and false H0 should be returned;
                                   # Leave FALSE to speed up calculations, just for estimation purposes
+                                  wald = FALSE, # Estimate the SEL at the true parameter values for comparison with OLS and GMM Wald test
                                   verbose = FALSE, # Benchmarks time, appends the timing to the output list, and passes trace=1 to optim
                                   optmethod = "Nelder-Mead", # Method that is passed to optim()
                                   gridtransform = NULL # Function that is applied to sel.weights.grid
@@ -218,7 +247,10 @@ stratSampleLinearQSEL <- function(N, # See generate.data for arguments of the sa
   M <- n - sum(Z$D) # observations on the sample from 1st stratum
   
   sel.weights.grid <- Z$X
-  if (!is.null(gridtransform)) sel.weights.grid <- gridtransform(sel.weights.grid)
+  if (!is.null(gridtransform)) {
+    ftransform <- get(gridtransform)
+    sel.weights.grid <- ftransform(sel.weights.grid)
+  }
   if (band < 0) {
     bn <- - band * 1.06*sd(sel.weights.grid)*length(sel.weights.grid)^{-1/5} # Bandwidth, Silverman's rule of thumb
   } else bn <- band
@@ -257,12 +289,29 @@ stratSampleLinearQSEL <- function(N, # See generate.data for arguments of the sa
     SELr1 <- optim.restricted1$value
   }
   
+  if (wald) {
+    ticWald0 <- Sys.time()
+    start.valuesWald <- Q.mm
+    if(verbose) print(paste0("Performing optimisation of restricted SEL under true H0: coefs=true values"))
+    optim.restrictedWald <- optim(start.valuesWald, fn=function(vpar) {linearSharesSmoothEmplikWald(vpar, coefs=params[1:2], Z, sel.weights = sel.weights)}, control=list(fnscale=-1, trace=traceval, REPORT=1), method="Brent", lower=Q.mm/3, upper=min(Q.mm*3, 0.98) )
+    thetahatWald <- optim.restrictedWald$par
+    SELWald <- optim.restrictedWald$value
+    diffWald <- difftime(ticWald1 <- Sys.time(), ticWald0, units = "mins")
+    if(verbose) print(paste0("Constrained optimisation (Wald) finished in ", round(diffWald, 1), " mins"))
+  }
+  
   results <- list(unrestricted = c(thetahat, SELur=SELur), Q.mm = Q.mm)
   if (powersize) {
     results$h0zero <- c(thetahat0[1], 0, thetahat0[2], SELr0=SELr0)
-    results$h1true <- c(thetahat1[1], 1, thetahat1[2], SELr1=SELr1)
+    results$h1true <- c(thetahat1[1], params[2], thetahat1[2], SELr1=SELr1)
   }
-  results$minutes <- if (powersize) as.numeric(c(diff1, diff2, diff3)) else as.numeric(diff1)
+  if (wald) results$h1Wald <- c(params[1:2], thetahatWald, SELWald=SELWald)
+  results$minutes <- as.numeric(diff1)
+  if (powersize) results$minutes <- c(results$minutes, diff2, diff3)
+  if (wald) results$minutes <- c(results$minutes, diffWald)
+  
+  results$call <- c(N, params, boundary, Pl, strat.var, heteroskedastic, seed, band, bn, powersize, wald, verbose, optmethod)
+  names(results$call) <- c("N", "beta0", "beta1", "sdX", "sdU", "boundary", "P1", "P2", "strat.var", "heteroskedastic", "seed", "band", "bn", "powersize", "wald", "verbose", "optmethod")
   
   return(results)
 }

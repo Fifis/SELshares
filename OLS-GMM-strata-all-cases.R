@@ -21,7 +21,7 @@ params <- c(beta0, beta1, sdXs, sdUs)
 powersize <- TRUE # TRUE because empirical size and power need to be computed
 num.workers <- if (.Platform$OS.type=="windows") 1 else detectCores()
 # Varying across simulations
-skedasis <- c(FALSE, TRUE) # Estimate homo- and heteroskedastic models
+skedasis <- c(TRUE, FALSE) # Estimate homo- and heteroskedastic models
 strat.vars <- c("Y", "X") # Estimate models with endo- and exogenous stratification
 sample.sizes <- c(50, 150, 500) # Original sample size BEFORE stratification
 methods <- c("OLS", "GMM")

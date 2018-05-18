@@ -29,19 +29,20 @@ powersize <- TRUE # TRUE because empirical size and power need to be computed
 wald <- TRUE
 verbose <- TRUE
 N <- 50 # 50, 150 or 500 was used in the paper
-# Naive bandwidths used in the paper for untransformed X: should be 0.3 for N=50, 0.4 for N=150 and 0.8 for N=500
+# Naïve bandwidths used in the paper for untransformed X: should be 0.3 for N=50, 0.4 for N=150 and 0.8 for N=500
 # band <- if (N<100) 0.3 else if (N<200) 0.4 else 0.8
-band <- 0.4
+# Naïve bandwidths used in the paper for log-transformed X: should be 0.5 for N=50, 0.45 for N=150 and 0.35 for N=500
+band <- if (N<100) 0.5 else if (N<200) 0.45 else 0.35
 heteroskedastic <- TRUE
-strat.var <- "X"
+strat.var <- "Y"
 optmethod <- "Nelder-Mead" # Passed to optim()
-gridtransform <- log # Not used in the paper, but 'gridtransform <- log' drastically improves the performance of the SEL estimator under log-normally distributed X; otherwise use 'NULL'
+gridtransform <- "log" # "log" drastically improves the performance of the SEL estimator under log-normally distributed X; otherwise use 'NULL'
 
-filename <- paste0("SELQmu-N", N, strat.var, ifelse(heteroskedastic, "-het", "-hom"), "-MC", MC, "-bw", band, optmethod, ".RData")
-cat("output will be in :", filename, "\n")
+filename <- paste0("SELQmu-N", N, strat.var, ifelse(heteroskedastic, "-het", "-hom"), "-MC", MC, "-bw", band, gridtransform, ".RData")
+cat("Output will be in ", filename, "\n")
 
 if (shares) {
-  SELofseed <- function(sid) stratSampleLinearQSEL(N=N, params=params, boundary=boundary, Pl=Pl, strat.var=strat.var, heteroskedastic=heteroskedastic, band=band, powersize=powersize,            verbose=verbose, optmethod=optmethod, gridtransform=gridtransform, seed=sid) 
+  SELofseed <- function(sid) stratSampleLinearQSEL(N=N, params=params, boundary=boundary, Pl=Pl, strat.var=strat.var, heteroskedastic=heteroskedastic, band=band, powersize=powersize, wald=wald, verbose=verbose, optmethod=optmethod, gridtransform=gridtransform, seed=sid) 
 } else {
   SELofseed <- function(sid) stratSampleLinearSEL(N=N,  params=params, boundary=boundary, Pl=Pl, strat.var=strat.var, heteroskedastic=heteroskedastic, band=band, powersize=powersize, wald=wald, verbose=verbose, optmethod=optmethod, gridtransform=gridtransform, seed=sid)
 }
@@ -53,6 +54,7 @@ if (multimachine) { # This part applies only for snow::parLapply implementation
   clusterExport(cl, c("generate.data", "SELofseed", "cemplik", "cemplik2",
                       "smoothEmplik", "linearSmoothEmplik", "linearSmoothEmplikTest",
                       "smoothEmplik2", "linearMuSmoothEmplik", "linearMuSmoothEmplikTest", "linearSharesSmoothEmplik", "linearSharesSmoothEmplikTest",
+                      "linearMuSmoothEmplikWald", "linearSharesSmoothEmplikWald",
                       "stratSampleLinearSEL",  "stratSampleLinearQSEL",
                       "params", "N", "strat.var", "heteroskedastic", "boundary", "Pl", "band",
                       "powersize", "wald", "verbose", "optmethod", "gridtransform"))
@@ -67,3 +69,5 @@ if (multimachine) { # This part applies only for snow::parLapply implementation
 save(res, file=filename)
 cat("It took", round(difftime(Sys.time(), start.time, units="hours"), 2), "hours to do", MC, "replications\n")
 
+if (multimachine) mpi.quit()
+  
