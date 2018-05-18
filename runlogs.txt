@@ -1,0 +1,241 @@
+[1] "2018-05-18 13:48:02 CEST"
+Heterosk. OLS, strat. by Y, N=50, MC=1000 
+Time difference of 6.04 secs
+     Intercept Bias Intercept SE Intercept RMSE Slope Bias  Slope SE Slope RMSE
+[1,]      -0.159471    0.4417299      0.4694265 -0.1075971 0.4867521  0.4982648
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 39.2% cases (HC0) and 15.9% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 55.1% cases (HC0) and 29.9% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 76.6% cases (HC0) and 54.9% cases (HC3)
+
+_______________________________________
+Heterosk. GMM, strat. by Y, N=50, MC=1000 
+Time difference of 6.01 secs
+     Intercept Bias Intercept SE Intercept RMSE  Slope Bias  Slope SE Slope RMSE
+[1,]      0.0306916    0.5164793      0.5171326 -0.04076987 0.4756909  0.4771978
+Share bias   Share SE Share RMSE 
+0.01321409 0.08908522 0.09001584 
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 43.6% cases (HC0) and 16.3% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 40.9% cases (HC0) and 15.9% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 84.1% cases (HC0) and 58.6% cases (HC3)
+
+_______________________________________
+Heterosk. OLS, strat. by Y, N=150, MC=1000 
+Time difference of 6.52 secs
+     Intercept Bias Intercept SE Intercept RMSE Slope Bias  Slope SE Slope RMSE
+[1,]     -0.1713712    0.3488854      0.3885452 -0.1024509 0.3513504  0.3658139
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 30.5% cases (HC0) and 13% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 73.5% cases (HC0) and 59.6% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 87.6% cases (HC0) and 75.7% cases (HC3)
+
+_______________________________________
+Heterosk. GMM, strat. by Y, N=150, MC=1000 
+Time difference of 6.53 secs
+     Intercept Bias Intercept SE Intercept RMSE  Slope Bias  Slope SE Slope RMSE
+[1,]     0.02342344    0.3979816      0.3984716 -0.02482478 0.3324641  0.3332238
+ Share bias    Share SE  Share RMSE 
+0.004726456 0.050402006 0.050598035 
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 32% cases (HC0) and 14.7% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 28.8% cases (HC0) and 11.9% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 95% cases (HC0) and 83.2% cases (HC3)
+
+_______________________________________
+Heterosk. OLS, strat. by Y, N=500, MC=1000 
+Time difference of 8.02 secs
+     Intercept Bias Intercept SE Intercept RMSE  Slope Bias  Slope SE Slope RMSE
+[1,]     -0.1804511    0.2894355       0.340957 -0.09062707 0.2640512  0.2790459
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 22.4% cases (HC0) and 12.8% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 96.2% cases (HC0) and 95.1% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 94.6% cases (HC0) and 90.8% cases (HC3)
+
+_______________________________________
+Heterosk. GMM, strat. by Y, N=500, MC=1000 
+Time difference of 8.11 secs
+     Intercept Bias Intercept SE Intercept RMSE  Slope Bias  Slope SE Slope RMSE
+[1,]    0.004251958    0.3303699       0.330232 -0.00609682 0.2456257  0.2455786
+ Share bias    Share SE  Share RMSE 
+0.001375923 0.027792706 0.027812861 
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 20.5% cases (HC0) and 11.1% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 19% cases (HC0) and 9.4% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 98.6% cases (HC0) and 94.5% cases (HC3)
+
+_______________________________________
+Heterosk. OLS, strat. by X, N=50, MC=1000 
+Time difference of 6.36 secs
+     Intercept Bias Intercept SE Intercept RMSE   Slope Bias  Slope SE Slope RMSE
+[1,]    0.003814534    0.3435197      0.3433691 -0.003195529 0.4274873  0.4272855
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 38.5% cases (HC0) and 15% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 36% cases (HC0) and 14.6% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 89% cases (HC0) and 68.6% cases (HC3)
+
+_______________________________________
+Heterosk. GMM, strat. by X, N=50, MC=1000 
+Time difference of 6.38 secs
+     Intercept Bias Intercept SE Intercept RMSE   Slope Bias  Slope SE Slope RMSE
+[1,]    0.008022184    0.4863108      0.4861338 -0.004070331 0.4791092  0.4788869
+Share bias   Share SE Share RMSE 
+0.01327859 0.10706068 0.10782787 
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 45.2% cases (HC0) and 15.2% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 43.5% cases (HC0) and 16.2% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 86.1% cases (HC0) and 62.8% cases (HC3)
+
+_______________________________________
+Heterosk. OLS, strat. by X, N=150, MC=1000 
+Time difference of 6.98 secs
+     Intercept Bias Intercept SE Intercept RMSE  Slope Bias  Slope SE Slope RMSE
+[1,]    0.002093039     0.260924      0.2608019 -0.00630234 0.3061625  0.3060743
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 30.1% cases (HC0) and 13.4% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 24% cases (HC0) and 10.4% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 95.4% cases (HC0) and 86.7% cases (HC3)
+
+_______________________________________
+Heterosk. GMM, strat. by X, N=150, MC=1000 
+Time difference of 6.77 secs
+     Intercept Bias Intercept SE Intercept RMSE   Slope Bias  Slope SE Slope RMSE
+[1,]    0.004155913    0.3837502      0.3835808 -0.007012784 0.3364189  0.3363238
+ Share bias    Share SE  Share RMSE 
+0.004960704 0.063303281 0.063465791 
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 32.3% cases (HC0) and 13.4% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 28.4% cases (HC0) and 11.4% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 94.1% cases (HC0) and 81.8% cases (HC3)
+
+_______________________________________
+Heterosk. OLS, strat. by X, N=500, MC=1000 
+Time difference of 8.77 secs
+     Intercept Bias Intercept SE Intercept RMSE  Slope Bias  Slope SE Slope RMSE
+[1,]   -0.001205308    0.2188797      0.2187736 0.001443715 0.2322629  0.2321512
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 18.1% cases (HC0) and 9.6% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 16% cases (HC0) and 8.2% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 98.2% cases (HC0) and 95.5% cases (HC3)
+
+_______________________________________
+Heterosk. GMM, strat. by X, N=500, MC=1000 
+Time difference of 8.9 secs
+     Intercept Bias Intercept SE Intercept RMSE  Slope Bias  Slope SE Slope RMSE
+[1,]   -0.002292465     0.335366      0.3352061 0.001186135 0.2540156  0.2538913
+  Share bias     Share SE   Share RMSE 
+0.0009106622 0.0347149332 0.0347095198 
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 19.7% cases (HC0) and 10.2% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 18.2% cases (HC0) and 8.7% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 97.6% cases (HC0) and 93.6% cases (HC3)
+
+_______________________________________
+Homosk. OLS, strat. by Y, N=50, MC=1000 
+Time difference of 6.11 secs
+     Intercept Bias Intercept SE Intercept RMSE Slope Bias  Slope SE Slope RMSE
+[1,]     -0.4575503    0.2855032      0.5392428  0.0991198 0.2155873  0.2371838
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 26.6% cases (HC0) and 12.1% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 52.8% cases (HC0) and 38.8% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 98.1% cases (HC0) and 93.9% cases (HC3)
+
+_______________________________________
+Homosk. GMM, strat. by Y, N=50, MC=1000 
+Time difference of 6.05 secs
+     Intercept Bias Intercept SE Intercept RMSE Slope Bias  Slope SE Slope RMSE
+[1,]    -0.04314716    0.3388952      0.3414627 0.01582034 0.2231201   0.223569
+Share bias   Share SE Share RMSE 
+0.01346920 0.08733477 0.08832415 
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 23.8% cases (HC0) and 9.1% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 28.8% cases (HC0) and 13.7% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 97.3% cases (HC0) and 91.5% cases (HC3)
+
+_______________________________________
+Homosk. OLS, strat. by Y, N=150, MC=1000 
+Time difference of 6.41 secs
+     Intercept Bias Intercept SE Intercept RMSE Slope Bias   Slope SE Slope RMSE
+[1,]     -0.4273035     0.148046      0.4521991 0.07075861 0.09056618  0.1148948
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 24.9% cases (HC0) and 15.8% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 83% cases (HC0) and 79.7% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 100% cases (HC0) and 99.9% cases (HC3)
+
+_______________________________________
+Homosk. GMM, strat. by Y, N=150, MC=1000 
+Time difference of 6.68 secs
+     Intercept Bias Intercept SE Intercept RMSE Slope Bias   Slope SE Slope RMSE
+[1,]   -0.005272018    0.1679883      0.1679871 -0.0010505 0.09021375 0.09017475
+ Share bias    Share SE  Share RMSE 
+0.004166686 0.049187963 0.049339614 
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 15.5% cases (HC0) and 8.3% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 16.8% cases (HC0) and 8.4% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 100% cases (HC0) and 99.9% cases (HC3)
+
+_______________________________________
+Homosk. OLS, strat. by Y, N=500, MC=1000 
+Time difference of 7.93 secs
+     Intercept Bias Intercept SE Intercept RMSE Slope Bias  Slope SE Slope RMSE
+[1,]     -0.4142182   0.08452138      0.4227451 0.06259996 0.0452577  0.0772332
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 40% cases (HC0) and 31% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 99.9% cases (HC0) and 99.9% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 100% cases (HC0) and 100% cases (HC3)
+
+_______________________________________
+Homosk. GMM, strat. by Y, N=500, MC=1000 
+Time difference of 8.17 secs
+     Intercept Bias Intercept SE Intercept RMSE   Slope Bias  Slope SE Slope RMSE
+[1,]  -0.0004542212   0.09383559     0.09378976 9.742785e-06 0.0427326 0.04271123
+Share bias   Share SE Share RMSE 
+0.00134043 0.02624720 0.02626830 
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 11.1% cases (HC0) and 7.7% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 9.6% cases (HC0) and 6.5% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 100% cases (HC0) and 100% cases (HC3)
+
+_______________________________________
+Homosk. OLS, strat. by X, N=50, MC=1000 
+Time difference of 6.19 secs
+     Intercept Bias Intercept SE Intercept RMSE  Slope Bias  Slope SE Slope RMSE
+[1,]   -0.003868436    0.2432402      0.2431493 0.003074156 0.1984167  0.1983413
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 19.2% cases (HC0) and 8.5% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 21.2% cases (HC0) and 9.7% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 98% cases (HC0) and 93.8% cases (HC3)
+
+_______________________________________
+Homosk. GMM, strat. by X, N=50, MC=1000 
+Time difference of 6.23 secs
+     Intercept Bias Intercept SE Intercept RMSE  Slope Bias Slope SE Slope RMSE
+[1,]   -0.002247289    0.2621773      0.2620558 0.002228413 0.208417  0.2083247
+Share bias   Share SE Share RMSE 
+0.01327859 0.10706068 0.10782787 
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 26.7% cases (HC0) and 10.3% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 28.5% cases (HC0) and 11.8% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 97.6% cases (HC0) and 92.3% cases (HC3)
+
+_______________________________________
+Homosk. OLS, strat. by X, N=150, MC=1000 
+Time difference of 6.87 secs
+     Intercept Bias Intercept SE Intercept RMSE   Slope Bias   Slope SE Slope RMSE
+[1,]  -0.0007374876    0.1260464      0.1259855 -0.002198327 0.08426492 0.08425146
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 13.9% cases (HC0) and 7.3% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 12.8% cases (HC0) and 7% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 100% cases (HC0) and 100% cases (HC3)
+
+_______________________________________
+Homosk. GMM, strat. by X, N=150, MC=1000 
+Time difference of 6.79 secs
+     Intercept Bias Intercept SE Intercept RMSE   Slope Bias   Slope SE Slope RMSE
+[1,]    0.001076206    0.1314137      0.1313524 -0.002397896 0.08632428 0.08631443
+ Share bias    Share SE  Share RMSE 
+0.004960704 0.063303281 0.063465791 
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 17.4% cases (HC0) and 9.7% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 15.6% cases (HC0) and 8.7% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 100% cases (HC0) and 99.9% cases (HC3)
+
+_______________________________________
+Homosk. OLS, strat. by X, N=500, MC=1000 
+Time difference of 8.63 secs
+     Intercept Bias Intercept SE Intercept RMSE   Slope Bias   Slope SE Slope RMSE
+[1,]    0.002717402   0.07032783     0.07034517 -0.000641873 0.04102939 0.04101389
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 9.7% cases (HC0) and 6.8% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 9% cases (HC0) and 6.4% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 100% cases (HC0) and 100% cases (HC3)
+
+_______________________________________
+Homosk. GMM, strat. by X, N=500, MC=1000 
+Time difference of 8.72 secs
+     Intercept Bias Intercept SE Intercept RMSE    Slope Bias   Slope SE Slope RMSE
+[1,]    0.004041289   0.07549036     0.07556075 -0.0008398371 0.04157971  0.0415674
+  Share bias     Share SE   Share RMSE 
+0.0009106622 0.0347149332 0.0347095198 
+Empirical test size (nominal size 5%): the true H0: beta1=1 was rejected in 11.2% cases (HC0) and 7.9% cases (HC3)
+Empirical test size (nominal size 5%): the true H0: beta1=beta2=true values was rejected in 9.9% cases (HC0) and 7.3% cases (HC3)
+Empirical test power (nominal size 5%): the false H0: beta1=0 was rejected in 100% cases (HC0) and 100% cases (HC3)
+
+_______________________________________
