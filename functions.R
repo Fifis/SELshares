@@ -14,7 +14,7 @@ generate.data <- function(N = 150, # Number of observations
   sdUs <- params[4]
   
   # Initialise the model, variables drawn from the target population
-  Xs <- rlnorm(N, sd = sdXs)
+  Xs <- sort(rlnorm(N, sd = sdXs))
   Us <- rnorm(N, sd = sdUs)
   if (heteroskedastic) Us <- Us*sqrt(.1+.2*Xs+.3*Xs^2)
   Ys <- cbind(1, Xs) %*% beta + Us
@@ -28,12 +28,14 @@ generate.data <- function(N = 150, # Number of observations
   Zs <- data.frame(Ys, Xs, D, T, include, weight.i)
   
   # Uncomment below to check for correct proportions
-  # library(plyr)
-  # prop.check <- ddply(Zs, .(D), function(df) prop=mean(df$include))
-  # print(prop.check)
+  # aggregate(Zs$include, by=list(Zs$D), FUN=mean)
   
   # Retained sample
   Z <- Zs[include, c(1:3, ncol(Zs))]
+  # Since the distribution is heavy-tailed log-normal, we trim off a couple of points to get rid of outliers and improve all estimators
+  # Z is sorted on X values, so the worst values are at the end of the dataframe; floor(log10(N)) seems a very sparing value
+  # For N<100, it will trim 1 point, for 100<N<1000, 2 points etc.
+  Z <- Z[1:(nrow(Z)-floor(log10(nrow(Z)))),]
   colnames(Z) <- c("Y", "X", "D", "weight")
   
   return(Z)
@@ -136,6 +138,95 @@ linearSharesSmoothEmplikWald <- function(theta, coefs, Z, sel.weights, trim = NU
   return(muopt)
 }
 
+# Function for both cases: find good initial values for SEL using GMM as a reference for order of magnitude
+# We do not trust GMM because it is (1) more sensitive to outliers and (2) less efficient
+# In order to speed up convergence and reduce maximisation time, we check a grid of points not far away from GMM initval and pick the best one
+# This function is completely agnostic about the true values for unrestricted estimation, covers a wide grid of possible points
+# Receives the dataset from the external function and does the computaion
+maximise.SEL.noshares <- function(Z,
+                                  params, # Used only if size and power are being tested
+                                  sel.weights,
+                                  powersize = TRUE,
+                                  wald = TRUE,
+                                  verbose = FALSE,
+                                  optmethod = "Nelder-Mead"
+) {
+  traceval <- if (verbose) 1 else 0
+  tic0 <- Sys.time()
+  if (verbose) print("Searching for a good initial value...")
+  start.values <- lm(Y~X, data=Z, weights=Z$weight)$coeff
+  start.value.multipliers <- c(-1, -0.5, 0, 0.5, 0.75, 1, 1.25, 1.5, 2)
+  start.values.grid.b0 <- sort(start.value.multipliers*start.values[1]) # A reasonable range for initial guesses
+  start.values.grid.b1 <- sort(start.value.multipliers*start.values[2])
+  start.values.grid.b0 <- c(min(start.values.grid.b0)-1, start.values.grid.b0, max(start.values.grid.b0)+1) # If any of the ends is 0, multiplication will not do anything; addition needed
+  start.values.grid.b1 <- c(min(start.values.grid.b1)-1, start.values.grid.b1, max(start.values.grid.b1)+1)
+  # The user must know how many initial values have been checked!
+  if (verbose) pb <- txtProgressBar(style=3, width=50)
+  test.start.grid <- matrix(NA, nrow=length(start.values.grid.b0), ncol=length(start.values.grid.b1))
+  progress <- 0 # We are not using Vectorize and outer for the sake of keeping track of progress
+  for (i in 1:length(start.values.grid.b0)) {
+    for (j in 1:length(start.values.grid.b1)) {
+      test.start.grid[i,j] <- linearSmoothEmplik(c(start.values.grid.b0[i], start.values.grid.b1[j]), Z = Z, sel.weights = sel.weights)
+      progress <- progress+1
+      if (verbose) setTxtProgressBar(pb, progress/prod(dim(test.start.grid)))
+    }
+  }
+  if (verbose) close(pb)
+  #
+  best.index <- which(test.start.grid==max(test.start.grid), arr.ind = TRUE)
+  start.values <- c(beta0=start.values.grid.b0[best.index[1]], beta1=start.values.grid.b1[best.index[2]])
+  tic.initval.ur <- Sys.time()
+  diff.initval <- as.numeric(difftime(tic.initval.ur, tic0, units = "mins"))
+  if (verbose) print(paste0("Searched [", paste(round(range(start.values.grid.b0), 2), collapse=","), "]x[", paste(round(range(start.values.grid.b1), 2), collapse=","),
+                            "] in ", round(diff.initval, 1), " mins; SEL(", paste(round(start.values[1:2], 2), collapse=","), ")=", round(max(test.start.grid), 2), "."))
+  
+  if (verbose) print("Conducting optimisation of unrestricted SEL without shares...")
+  optim.unrestricted <- optim(start.values, fn=function(vpar) {linearSmoothEmplik(vpar, Z, sel.weights = sel.weights)}, control=list(fnscale=-1, trace=traceval, REPORT=1), method=optmethod)
+  tic.ur <- Sys.time()
+  diff.ur <- as.numeric(difftime(tic.ur, tic.initval.ur, units = "mins"))
+  thetahat <- optim.unrestricted$par
+  SELur <- optim.unrestricted$value
+  if (verbose) print(paste0("Unconstrained optimisation finished in ", round(diff.ur, 1), " mins; SEL(", paste(round(thetahat, 2), collapse=","), ")=", round(SELur, 2), "."))
+  
+  if (powersize) {
+    tic.r0 <- Sys.time()
+    # Measuring the power and size of the test, i.e. H01: slope = 0 and H02: slope = true value
+    start.values0 <- lm(Y~1, data=Z, weights = Z$weight)$coeff # Restricted model with slope = 0
+    start.values1 <- lm(I(Y-params[2]*X)~1, data=Z, weights = Z$weight)$coeff # Restricted model with slope = true slope
+    range0 <- if (start.values0<0) c(min(2*start.values0, start.values0-3), max(0.5*start.values0, start.values0+3)) else c(min(0.5*start.values0, start.values0-3), max(2*start.values0, start.values0+3))
+    range1 <- if (start.values1<0) c(min(2*start.values1, start.values1-2), max(0.5*start.values1, start.values1+2)) else c(min(0.5*start.values1, start.values1-2), max(2*start.values1, start.values1+2))
+    
+    if(verbose) print(paste0("Performing optimisation of restricted SEL without shares under false H0: slope=0..."))
+    optim.restricted0 <- optim(start.values0, fn=function(vpar) {linearSmoothEmplikTest(vpar, slope=0, Z, sel.weights = sel.weights)}, control=list(fnscale=-1, trace=traceval, REPORT=1), method="Brent", lower=range0[1], upper=range0[2])
+    tic.r0 <- Sys.time()
+    diff.r0 <- as.numeric(difftime(tic.r0, tic.ur, units = "mins"))
+    thetahat0 <- optim.restricted0$par
+    SELr0 <- optim.restricted0$value
+    print(paste0("Constrained optimisation 1 finished in ", round(diff.r0, 1), " mins; SEL(", round(thetahat0, 2), ",0)=", round(SELr0, 2), "."))
+    
+    if (verbose) print(paste0("Performing optimisation of restricted SEL without shares under true H0: slope=", params[2], "..."))
+    optim.restricted1 <- optim(start.values1, fn=function(vpar) {linearSmoothEmplikTest(vpar, slope=params[2], Z, sel.weights = sel.weights)}, control=list(fnscale=-1, trace=traceval, REPORT=1), method="Brent", lower=range1[1], upper=range1[2])
+    tic.r1 <- Sys.time()
+    diff.r1 <- as.numeric(difftime(tic.r1, tic.r0, units = "mins"))
+    thetahat1 <- optim.restricted1$par
+    SELr1 <- optim.restricted1$value
+    print(paste0("Constrained optimisation 2 finished in ", round(diff.r1, 1), " mins; SEL(", round(thetahat1, 2), ",", params[2],")=", round(SELr1, 2), "."))
+  }
+  
+  results <- list(noshares.ur = c(thetahat, SELur=SELur))
+  if (powersize) {
+    results$noshares.h0zero <- c(beta0=thetahat0[1], beta1=0, SELr0=SELr0)
+    results$noshares.h1true <- c(beta0=thetahat1[1], beta1=params[2], SELr1=SELr1)
+  }
+  if (wald) {
+    SELwald <- as.numeric(linearSmoothEmplik(params[1:2], Z, sel.weights))
+    results$noshares.h1wald <- c(beta0=params[1], beta1=params[2], SELwald=SELwald)
+  }
+  results$minutes <- c(noshares.ur.initval=diff.initval, noshares.ur.optim=diff.ur)
+  if (powersize) results$minutes <- c(results$minutes, noshares.h0=diff.r0, noshares.h1=diff.r1)
+  return(results)
+}
+
 # Function for case 1: no shares
 stratSampleLinearSEL <- function(N, # See generate.data for arguments of the same name
                                   params, 
@@ -156,7 +247,7 @@ stratSampleLinearSEL <- function(N, # See generate.data for arguments of the sam
   tic0 <- Sys.time()
   if(seed%%10 == 0) cat(seed, " ")
   if(seed%%200 == 0) cat(seed, "\n")
-  traceval <- if(verbose) 1 else 0
+  traceval <- if (verbose) 1 else 0
   
   Z <- generate.data(N=N, params=params, boundary=boundary, Pl=Pl, strat.var=strat.var, heteroskedastic=heteroskedastic, seed=seed)
   
@@ -172,47 +263,7 @@ stratSampleLinearSEL <- function(N, # See generate.data for arguments of the sam
   sel.weight.den <- rowSums(sel.weights) # sum over 'j' to obtain marginal on 'i'
   sel.weights <- sel.weights / sel.weight.den # w_{ij} ~ p(j|i)
   
-  start.values <- lm(Y~X, data=Z, weights=Z$weight)$coeff
-  # start.values <- params[1:2] # Uncomment if you want to start the search from true values (infeasible in practice; for testing only)
-  
-  if (verbose) print("Conducting optimisation of unrestricted SEL, details below")
-  optim.unrestricted <- optim(start.values, fn=function(vpar) {linearSmoothEmplik(vpar, Z, sel.weights = sel.weights)}, control=list(fnscale=-1, trace=traceval, REPORT=1), method=optmethod )
-  diff1 <- difftime(tic1 <- Sys.time(), tic0, units = "mins")
-  if (verbose) print(paste0("Unconstrained optimisation finished in ", round(diff1, 1), " mins"))
-  thetahat <- optim.unrestricted$par
-  SELur <- optim.unrestricted$value
-  
-  if (powersize) {
-    # Measuring the power and size of the test, i.e. H01: slope = 0 and H02: slope = true value
-    start.values0 <- lm(Y~1, data=Z, weights = Z$weight)$coeff # Restricted model with slope = 0
-    start.values1 <- lm(I(Y-params[2]*X)~1, data=Z, weights = Z$weight)$coeff # Restricted model with slope = true slope
-    if(verbose) print(paste0("Performing optimisation of restricted SEL under false H0: slope=0"))
-    optim.restricted0 <- optim(start.values0, fn=function(vpar) {linearSmoothEmplikTest(vpar, slope=0, Z, sel.weights = sel.weights)}, control=list(fnscale=-1, trace=traceval, REPORT=1), method="Brent", lower=-2, upper=15 )
-    diff2 <- difftime(tic2 <- Sys.time(), tic1, units = "mins")
-    if(verbose) {
-      print(paste0("Constrained optimisation 1 finished in ", round(diff2, 1), " mins"))
-      print(paste0("Performing optimisation of restricted SEL under true H0: slope=", params[2]))
-    }
-    optim.restricted1 <- optim(start.values1, fn=function(vpar) {linearSmoothEmplikTest(vpar, slope=params[2], Z, sel.weights = sel.weights)}, control=list(fnscale=-1, trace=traceval, REPORT=1), method="Brent", lower=-1, upper=5 )
-    diff3 <- difftime(tic3 <- Sys.time(), tic2, units = "mins")
-    if(verbose) print(paste0("Constrained optimisation 2 finished in ", round(diff3, 1), " mins"))
-    thetahat0 <- optim.restricted0$par
-    SELr0 <- optim.restricted0$value
-    thetahat1 <- optim.restricted1$par
-    SELr1 <- optim.restricted1$value
-  }
-  
-  results <- list(unrestricted = c(thetahat, SELur=SELur))
-  if (powersize) {
-    results$h0zero <- c(thetahat0[1], 0, SELr0=SELr0)
-    results$h1true <- c(thetahat1[1], params[2], SELr1=SELr1)
-  }
-  if (wald) {
-    SELwald <- as.numeric(linearSmoothEmplik(params[1:2], Z, sel.weights))
-    results$h1wald <- c(params[1:2], SELwald=SELwald)
-  }
-  results$minutes <- as.numeric(diff1)
-  if (powersize) results$minutes <- c(results$minutes, diff2, diff3)
+  results <- maximise.SEL.noshares(Z=Z, params=params, sel.weights=sel.weights, powersize=powersize, wald=wald, verbose=verbose, optmethod=optmethod)
   
   results$call <- c(N, params, boundary, Pl, strat.var, heteroskedastic, seed, band, bn, powersize, wald, verbose, optmethod)
   names(results$call) <- c("N", "beta0", "beta1", "sdX", "sdU", "boundary", "P1", "P2", "strat.var", "heteroskedastic", "seed", "band", "bn", "powersize", "wald", "verbose", "optmethod")
@@ -259,59 +310,75 @@ stratSampleLinearQSEL <- function(N, # See generate.data for arguments of the sa
   sel.weights <- sel.weights / sel.weight.den # w_{ij} ~ p(j|i)
   
   Q.mm <- (M/Pl[1]) / (M/Pl[1] + (n-M)/Pl[2])
-  start.values <- c(lm(Y~X, data=Z, weights=Z$weight)$coeff, Q=Q.mm)
-  # start.values <- c(params[1:2], Q=Q.mm) # Uncomment if you want to start the search from true values (infeasible in practice; for testing only)
   
-  if (verbose) print("Conducting optimisation of unrestricted SEL, details below")
-  optim.unrestricted <- optim(start.values, fn=function(vpar) {linearSharesSmoothEmplik(vpar, Z, sel.weights = sel.weights)}, control=list(fnscale=-1, trace=traceval, REPORT=1), method=optmethod )
-  diff1 <- difftime(tic1 <- Sys.time(), tic0, units = "mins")
-  if (verbose) print(paste0("Unconstrained optimisation finished in ", round(diff1, 1), " mins"))
+  initval <- maximise.SEL.noshares(Z=Z, params=params, sel.weights=sel.weights, powersize=powersize, wald=wald, verbose=verbose, optmethod=optmethod)
+  
+  start.values <- c(initval$noshares.ur[1:2], Q=Q.mm)
+  # start.values <- c(params[1:2], Q=if(heteroskedastic)Q.het else Q.hom) # Uncomment if you want to start the search from true values (infeasible in practice; for testing only; Q.het and Q.hom must be in memory!)
+  if (verbose) print("Conducting optimisation of unrestricted SEL with shares...")
+  tic.initval.ur <- Sys.time()
+  optim.unrestricted <- optim(start.values, fn=function(vpar) {linearSharesSmoothEmplik(vpar, Z, sel.weights = sel.weights)}, control=list(fnscale=-1, trace=traceval, REPORT=1), method=optmethod)
+  tic.ur <- Sys.time()
+  diff.ur <- as.numeric(difftime(tic.ur, tic.initval.ur, units = "mins"))
   thetahat <- optim.unrestricted$par
   SELur <- optim.unrestricted$value
+  if (verbose) print(paste0("Unconstrained optimisation finished in ", round(diff.ur, 1), " mins; SEL(", paste(round(thetahat, 2), collapse=","), ")=", round(SELur, 2), "."))
   
   if (powersize) {
     # Measuring the power and size of the test, i.e. H01: slope = 0 and H02: slope = true value
-    start.values0 <- c(lm(Y~1, data=Z, weights = Z$weight)$coeff, Q=Q.mm) # Restricted model with slope = 0
-    start.values1 <- c(lm(I(Y-params[2]*X)~1, data=Z, weights = Z$weight)$coeff, Q=Q.mm) # Restricted model with slope = true slope
-    if(verbose) print(paste0("Performing optimisation of restricted SEL under false H0: slope=0"))
-    optim.restricted0 <- optim(start.values0, fn=function(vpar) {linearSharesSmoothEmplikTest(vpar, slope=0, Z, sel.weights = sel.weights)}, control=list(fnscale=-1, trace=traceval, REPORT=1), method=optmethod )
-    diff2 <- difftime(tic2 <- Sys.time(), tic1, units = "mins")
-    if(verbose) {
-      print(paste0("Constrained optimisation 1 finished in ", round(diff2, 1), " mins"))
-      print(paste0("Performing optimisation of restricted SEL under true H0: slope=", params[2]))
-    }
-    optim.restricted1 <- optim(start.values1, fn=function(vpar) {linearSharesSmoothEmplikTest(vpar, slope=params[2], Z, sel.weights = sel.weights)}, control=list(fnscale=-1, trace=traceval, REPORT=1), method=optmethod )
-    diff3 <- difftime(tic3 <- Sys.time(), tic2, units = "mins")
-    if(verbose) print(paste0("Constrained optimisation 2 finished in ", round(diff3, 1), " mins"))
+    # As usually, first, we use the maxima of SEL without shares and then add shares and maximise the full function
+    start.values0 <- c(initval$noshares.h0zero[1], Q=Q.mm)
+    start.values1 <- c(initval$noshares.h1true[1], Q=Q.mm)
+    # start.values0 <- c(params[1]+exp(params[3]^2/2), Q=if(heteroskedastic) Q.het else Q.hom) # Uncomment if you want to start the search from true values (infeasible in practice; for testing only; Q.het and Q.hom must be in memory!)
+    # start.values1 <- c(params[1], Q=if(heteroskedastic) Q.het else Q.hom)
+    tic.initval.r <- Sys.time()
+    if (verbose) print(paste0("Performing optimisation of restricted SEL with shares under false H0: slope=0..."))
+    optim.restricted0 <- optim(start.values0, fn=function(vpar) {linearSharesSmoothEmplikTest(vpar, slope=0, Z, sel.weights = sel.weights)}, control=list(fnscale=-1, trace=traceval, REPORT=1), method=optmethod)
+    tic.r0 <- Sys.time()
+    diff.r0 <- as.numeric(difftime(tic.r0, tic.initval.r, units = "mins"))
     thetahat0 <- optim.restricted0$par
     SELr0 <- optim.restricted0$value
+    if (verbose) {
+      print(paste0("Constrained optimisation 1 finished in ", round(diff.r0, 1), " mins; SEL(", round(thetahat0[1], 2), ",0,", round(thetahat0[2], 2), ")=", round(SELr0, 2), "."))
+      print(paste0("Performing optimisation of restricted SEL with shares under true H0: slope=", params[2], "..."))
+    }
+    optim.restricted1 <- optim(start.values1, fn=function(vpar) {linearSharesSmoothEmplikTest(vpar, slope=params[2], Z, sel.weights = sel.weights)}, control=list(fnscale=-1, trace=traceval, REPORT=1), method=optmethod)
+    tic.r1 <- Sys.time()
+    diff.r1 <- as.numeric(difftime(tic.r1, tic.r0, units = "mins"))
     thetahat1 <- optim.restricted1$par
     SELr1 <- optim.restricted1$value
+    if(verbose) print(paste0("Constrained optimisation 2 finished in ", round(diff.r1, 1), " mins; SEL(", round(thetahat1[1], 2), ",", params[2], ",", round(thetahat1[2], 2), ")=", round(SELr1, 2), "."))
   }
   
   if (wald) {
+    start.valuesWald <- Q.mm # Does not really matter for Brent optimiser
+    # start.valuesWald <- Q.het
+    if (verbose) print(paste0("Performing optimisation of restricted SEL under true H0: coefs=(", paste(params[1:2], collapse = ","), ")."))
     ticWald0 <- Sys.time()
-    start.valuesWald <- Q.mm
-    if(verbose) print(paste0("Performing optimisation of restricted SEL under true H0: coefs=true values"))
-    optim.restrictedWald <- optim(start.valuesWald, fn=function(vpar) {linearSharesSmoothEmplikWald(vpar, coefs=params[1:2], Z, sel.weights = sel.weights)}, control=list(fnscale=-1, trace=traceval, REPORT=1), method="Brent", lower=Q.mm/3, upper=min(Q.mm*3, 0.98) )
+    optim.restrictedWald <- optim(start.valuesWald, fn=function(vpar) {linearSharesSmoothEmplikWald(vpar, coefs=params[1:2], Z, sel.weights = sel.weights)},
+                                  control=list(fnscale=-1, trace=traceval, REPORT=1), method="Brent", lower=max(Q.mm/3, 0.02), upper=min(Q.mm*4, 0.98))
+    ticWald1 <- Sys.time()
+    diff.Wald <- as.numeric(difftime(ticWald1, ticWald0, units = "mins"))
     thetahatWald <- optim.restrictedWald$par
     SELWald <- optim.restrictedWald$value
-    diffWald <- difftime(ticWald1 <- Sys.time(), ticWald0, units = "mins")
-    if(verbose) print(paste0("Constrained optimisation (Wald) finished in ", round(diffWald, 1), " mins"))
+    if(verbose) print(paste0("Constrained optimisation (Wald) finished in ", round(diff.Wald, 1), " mins; SEL(", params[1], ",", params[2], ",", round(thetahatWald[1], 2), ")=", round(SELWald, 2), "."))
   }
   
   results <- list(unrestricted = c(thetahat, SELur=SELur), Q.mm = Q.mm)
   if (powersize) {
-    results$h0zero <- c(thetahat0[1], 0, thetahat0[2], SELr0=SELr0)
-    results$h1true <- c(thetahat1[1], params[2], thetahat1[2], SELr1=SELr1)
+    results$h0zero <- c(thetahat0[1], beta1=0, thetahat0[2], SELr0=SELr0)
+    results$h1true <- c(thetahat1[1], beta1=params[2], thetahat1[2], SELr1=SELr1)
   }
-  if (wald) results$h1Wald <- c(params[1:2], thetahatWald, SELWald=SELWald)
-  results$minutes <- as.numeric(diff1)
-  if (powersize) results$minutes <- c(results$minutes, diff2, diff3)
-  if (wald) results$minutes <- c(results$minutes, diffWald)
+  if (wald) results$h1Wald <- c(beta0=params[1], beta1=params[2], Q=thetahatWald, SELWald=SELWald)
+  
+  # Processing timestamps
+  results$minutes <- c(shares.ur.initval=as.numeric(initval$minutes["noshares.ur.initval"]+initval$minutes["noshares.ur.optim"]), shares.ur.optim=diff.ur)
+  if (powersize) results$minutes <- c(results$minutes, shares.r.initval=as.numeric(initval$minutes["noshares.h0"]+initval$minutes["noshares.h1"]), shares.h0=diff.r0, shares.h1=diff.r1)
+  if (wald) results$minutes <- c(results$minutes, shares.hWald=diff.Wald)
   
   results$call <- c(N, params, boundary, Pl, strat.var, heteroskedastic, seed, band, bn, powersize, wald, verbose, optmethod)
-  names(results$call) <- c("N", "beta0", "beta1", "sdX", "sdU", "boundary", "P1", "P2", "strat.var", "heteroskedastic", "seed", "band", "bn", "powersize", "wald", "verbose", "optmethod")
+  names(results$call) <- c("N", "beta0", "beta1", "sdX", "sdU", "boundary", "P1", "P2", "strat.var", "heteroskedastic",
+                           "seed", "band", "bn", "powersize", "wald", "verbose", "optmethod")
   
   return(results)
 }

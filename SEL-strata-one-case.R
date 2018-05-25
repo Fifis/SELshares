@@ -32,13 +32,21 @@ N <- 50 # 50, 150 or 500 was used in the paper
 # Naïve bandwidths used in the paper for untransformed X: should be 0.3 for N=50, 0.4 for N=150 and 0.8 for N=500
 # band <- if (N<100) 0.3 else if (N<200) 0.4 else 0.8
 # Naïve bandwidths used in the paper for log-transformed X: should be 0.5 for N=50, 0.45 for N=150 and 0.35 for N=500
-band <- if (N<100) 0.5 else if (N<200) 0.45 else 0.35
+band <- if (N<100) 0.6 else if (N<200) 0.5 else 0.4
+# band <- -1 # For rule-of-thumb bandwidths
 heteroskedastic <- TRUE
 strat.var <- "Y"
 optmethod <- "Nelder-Mead" # Passed to optim()
 gridtransform <- "log" # "log" drastically improves the performance of the SEL estimator under log-normally distributed X; otherwise use 'NULL'
 
-filename <- paste0("SELQmu-N", N, strat.var, ifelse(heteroskedastic, "-het", "-hom"), "-MC", MC, "-bw", band, gridtransform, ".RData")
+# Estimates taken from OLS-GMM-strata-all-cases.R; they are not used in this script
+Q.hom <- 0.2707248
+Q.het <- 0.2839481
+Q.X <- plnorm(boundary)
+
+# print("Estimated theoretical aggregate shares, starting simulations...")
+
+filename <- paste0("SEL", if(shares)"Qmu-" else "", "N", N, strat.var, ifelse(heteroskedastic, "-het", "-hom"), "-MC", MC, "-bw", band, gridtransform, ".RData")
 cat("Output will be in ", filename, "\n")
 
 if (shares) {
@@ -55,9 +63,9 @@ if (multimachine) { # This part applies only for snow::parLapply implementation
                       "smoothEmplik", "linearSmoothEmplik", "linearSmoothEmplikTest",
                       "smoothEmplik2", "linearMuSmoothEmplik", "linearMuSmoothEmplikTest", "linearSharesSmoothEmplik", "linearSharesSmoothEmplikTest",
                       "linearMuSmoothEmplikWald", "linearSharesSmoothEmplikWald",
-                      "stratSampleLinearSEL",  "stratSampleLinearQSEL",
+                      "maximise.SEL.noshares", "stratSampleLinearSEL",  "stratSampleLinearQSEL",
                       "params", "N", "strat.var", "heteroskedastic", "boundary", "Pl", "band",
-                      "powersize", "wald", "verbose", "optmethod", "gridtransform"))
+                      "powersize", "wald", "verbose", "optmethod", "gridtransform", "Q.hom", "Q.het"))
   res <- parLapply(cl, 1:MC, SELofseed)
   stopCluster(cl)
 } else { # This part applies only for parallel::mclapply implementation
@@ -70,4 +78,3 @@ save(res, file=filename)
 cat("It took", round(difftime(Sys.time(), start.time, units="hours"), 2), "hours to do", MC, "replications\n")
 
 if (multimachine) mpi.quit()
-  
